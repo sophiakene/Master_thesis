@@ -10,8 +10,10 @@ from sklearn import svm
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier 
 from sklearn.model_selection import train_test_split, TimeSeriesSplit, cross_val_score, StratifiedKFold
-from sklearn.dummy import DummyClassifier
-from sklearn.pipeline import make_pipeline
+#from sklearn.dummy import DummyClassifier
+#from sklearn.pipeline import make_pipeline
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import cross_val_predict
 #from sklearn.preprocessing import StandardScaler
 from mne.decoding import (
     CSP,
@@ -49,9 +51,9 @@ info = create_info(ch_names, sfreq, ch_types='eeg', verbose=None)
 #data = "dataset_baseline_correction-200.h5"
 #data = "PERCEPTION_DATASET.h5"
 #data = "IMAGINATION_DATASET.h5"
-#data = "PERCEPTION_DATASET_W_PREC_ICA.h5"
+data = "PERCEPTION_DATASET_W_PREC_ICA.h5"
 
-data = "INDIVIDUAL_LENGTH_ALL_CONDITIONS.h5"
+#data = "INDIVIDUAL_LENGTH_ALL_CONDITIONS.h5"
 #np.set_printoptions(threshold=np.inf) #to see the whole confusion matrix
 
 with h5py.File(data, 'r') as f:
@@ -87,64 +89,10 @@ with h5py.File(data, 'r') as f:
     aggregated_data = np.mean(filtered_features, axis=1) #this aggregates all the channels into 1 mean signal. let's not do this now, let's try the vectorizer but still use all of the channels separately
     print("aggegated data shape ", aggregated_data.shape)
     #print("distribution of song labels in data set: ", Counter(filtered_labels))
-    """
-    print("----------------------------------------------\n")
-    print("CLASSIFYING USING SCALER AND VECTORIZER\n")    
-    clf = make_pipeline(
-    Scaler(info), #but maybe this just scales the different channels? so not really worth it when aggregated?
-    #Vectorizer(),
-    LogisticRegression(solver="liblinear"),  # liblinear is faster than lbfgs
-    )
-
-    scores = cross_val_multiscore(clf, filtered_features, filtered_labels, cv=5, n_jobs=None)
-
-    # Mean scores across cross-validation splits
-    score = np.mean(scores, axis=0)
-    print("Spatio-temporal: %0.1f%%" % (100 * score,))
-    
-    print("----------------------------------------------")
-    """
-    #print("WITH BASELINE CORRECTION")
-
-    ###BASELINE song prediction
-    #split the data
-    
-    # Iterate over the splits
-    #print("With TimeSplitSeries (n=5):\n")
-    # Define the number of splits for TimeSeriesSplit
-    #n_splits = 5  # Adjust the number of splits as needed
-    # Initialize TimeSeriesSplit
-    #tscv = TimeSeriesSplit(n_splits=n_splits)
-
-    #for train_index, test_index in tscv.split(aggregated_data):
-    """for train_index, test_index in train_test_split(aggregated_data):
-        #print(train_index, test_index, type(train_index), type(test_index))
-        X_train, X_test = aggregated_data[train_index], aggregated_data[test_index]
-        y_train, y_test = filtered_labels[train_index], filtered_labels[test_index]
-
-        print("distribution of song labels in train set: ", Counter(y_train))
-        print("distribution of song labels in test set: ", Counter(y_test))
-    
-        #X_train, X_test, y_train, y_test = train_test_split(aggregated_data, filtered_labels, test_size=0.2, random_state=42)
-        
-        #print("elements in training labels: ",sorted(Counter(y_train).items()))
-        #print("---------")
-        #print("elements in test labels: ", sorted(Counter(y_test).items()))
-        #this looks fine, ca. 480 in test data, 1900 in training data per class; each class is represented
-        baseline_classifier = svm.SVC(kernel = "linear", C=0.0001)
-        #baseline_classifier = LogisticRegression(multi_class='multinomial', solver='lbfgs')
-        #baseline_classifier = DecisionTreeClassifier()
-        #baseline_classifier = DummyClassifier(strategy="most_frequent")
-        baseline_classifier.fit(X_train, y_train)
-        y_pred_baseline = baseline_classifier.predict(X_test)
-        print("Baseline evaluation *song prediction* using {}:\n".format(str(baseline_classifier)),
-        "Accuracy: ", accuracy_score(y_test, y_pred_baseline),
-        "Baseline precision: ", precision_score(y_test, y_pred_baseline, average='macro'), 
-        "Baseline recall: ", recall_score(y_test, y_pred_baseline, average='macro'),
-        "Baseline f1-score: ", f1_score(y_test, y_pred_baseline, average='macro'),
-        "Confusion matrix: ", confusion_matrix(y_test, y_pred_baseline),
-        "\n----------------------\n----------------------")
-    """
+    ###################################################################################
+    ###################################################################################
+    ###################################################################################
+    ###################################################################################
     print("5-FOLD CROSS-VALIDATION OF SONG PREDICTION USING PRECOMPUTED ICA:")
     baseline_classifier = svm.SVC(kernel = "linear", C=0.0001)
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -156,9 +104,15 @@ with h5py.File(data, 'r') as f:
     "\nPRECISION: ", cv_scores_precision,
     "\nRECALL: ", cv_scores_recall,
     "\nF1SCORE: ", cv_scores_f1)
+    y_pred = cross_val_predict(baseline_classifier, aggregated_data, filtered_labels, cv=cv)
+    print(confusion_matrix(filtered_labels, y_pred))
+
+    ###################################################################################
+    ###################################################################################
+    ###################################################################################
+    ###################################################################################
     ###BASELINE meter prediction
     #convert the stimulus labels to binary meter labels
-
     print("Meter prediction\n")
 
     three_quarters_id = [1,2,11,12,21,22]
@@ -173,42 +127,7 @@ with h5py.File(data, 'r') as f:
             meter_labels.append(1)
     ### 0 = 3/4, 1 = 4/4
 
-    """
-    clf = make_pipeline(
-    #Scaler(info), 
-    #Vectorizer(),
-    LogisticRegression(solver="liblinear"),  # liblinear is faster than lbfgs
-    )
-
-    scores = cross_val_multiscore(clf, filtered_features, meter_labels, cv=5, n_jobs=None)
-
-    # Mean scores across cross-validation splits
-    score = np.mean(scores, axis=0)
-    print("Spatio-temporal: %0.1f%%" % (100 * score,))
-    """
-    """
-    print("with TimeSplitSeries:\n")
     
-    for train_index, test_index in tscv.split(aggregated_data):
-        #print(train_index, test_index, type(train_index), type(test_index))
-        X_train, X_test = aggregated_data[train_index], aggregated_data[test_index]
-        y_train, y_test = np.array(meter_labels)[train_index], np.array(meter_labels)[test_index]
-
-        #print(len(meter_labels))
-        #X_train, X_test, y_train, y_test = train_test_split(aggregated_data, meter_labels, test_size=0.2, random_state=42)
-        baseline_classifier = svm.SVC(kernel="linear", C=0.0001)
-        #baseline_classifier = LogisticRegression()
-        #baseline_classifier = DummyClassifier(strategy="most_frequent")
-        baseline_classifier.fit(X_train, y_train)
-        y_pred_baseline = baseline_classifier.predict(X_test)
-        print("Baseline Evaluation *meter prediction* using {}:\n".format(str(baseline_classifier)),
-        "Accuracy: ", accuracy_score(y_test, y_pred_baseline),
-        "Baseline precision: ", precision_score(y_test, y_pred_baseline), 
-        "Baseline recall: ", recall_score(y_test, y_pred_baseline), 
-        "Baseline f1-score: ", f1_score(y_test, y_pred_baseline),
-        "Confusion matrix: ", confusion_matrix(y_test, y_pred_baseline),
-        "----------------------\n--------------------")
-    """
     print("5-FOLD CROSS-VALIDATION OF METER PREDICTION USING PRECOMPUTED ICA:")
     baseline_classifier = svm.SVC(kernel = "linear", C=0.0001)
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -220,12 +139,48 @@ with h5py.File(data, 'r') as f:
     "\nPRECISION: ", cv_scores_precision,
     "\nRECALL: ", cv_scores_recall,
     "\nF1SCORE: ", cv_scores_f1)
+    y_pred = cross_val_predict(baseline_classifier, aggregated_data, meter_labels, cv=cv)
+    print(confusion_matrix(meter_labels, y_pred))    
+
+    ###################################################################################
+    ###################################################################################
+    ###################################################################################
+    ###################################################################################
+    ###BASELINE MODE PREDICTION
+    major_ids = [2,3,4,12,13,14,21,23,24]
+    minor_ids = [1,11,22]
+    mode_labels = []
+    for l in filtered_labels:
+        if l in minor_ids:
+            mode_labels.append(0)
+        elif l in major_ids:
+            mode_labels.append(1)
+    ### 0 = minor, 1 = major
+
+    print("5-FOLD CROSS-VALIDATION OF MODE PREDICTION USING PRECOMPUTED ICA:")
+    baseline_classifier = svm.SVC(kernel = "linear", C=0.0001)
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    cv_scores_accuracy = cross_val_score(baseline_classifier, aggregated_data, mode_labels, cv=cv, scoring='accuracy')
+    cv_scores_precision = cross_val_score(baseline_classifier, aggregated_data, mode_labels, cv=cv, scoring='precision_macro')
+    cv_scores_recall = cross_val_score(baseline_classifier, aggregated_data, mode_labels, cv=cv, scoring='recall_macro')
+    cv_scores_f1 = cross_val_score(baseline_classifier, aggregated_data, mode_labels, cv=cv, scoring='f1_macro')
+    print("\nACCURACY: ",cv_scores_accuracy, 
+    "\nPRECISION: ", cv_scores_precision,
+    "\nRECALL: ", cv_scores_recall,
+    "\nF1SCORE: ", cv_scores_f1)
+    y_pred = cross_val_predict(baseline_classifier, aggregated_data, mode_labels, cv=cv)
+    print(confusion_matrix(mode_labels, y_pred))
 
 
+   
+    ###################################################################################
+    ###################################################################################
+    ###################################################################################
+    ###################################################################################
     ###BASELINE LYRICS PREDICTION SAME-SONG PAIRS
     #unsure if I should do it on all data points or just the same-song-pairs with and without lyrics?
     
-    print("Lyrics prediction:\n")
+    print("Lyrics prediction SAME-SONG PAIRS: \n")
 
     #delete instrumental stimuli 21,22,23,24
     instrumental_ids = [21,22,23,24]
@@ -249,45 +204,11 @@ with h5py.File(data, 'r') as f:
             lyrics_labels.append(0)
     #print(lyrics_labels, len(lyrics_labels))
     #print(filtered_features_wo_instrumental.shape)
-    """
-    clf = make_pipeline(
-    #Scaler(info), 
-    #Vectorizer(),
-    LogisticRegression(solver="liblinear"),  # liblinear is faster than lbfgs
-    )
 
-    scores = cross_val_multiscore(clf, filtered_features_wo_instrumental, lyrics_labels,cv=10, n_jobs=None)
-
-    # Mean scores across cross-validation splits
-    score = np.mean(scores, axis=0)
-    print("Spatio-temporal: %0.1f%%" % (100 * score,))
-
-    """
     lyrics_labels = np.array(lyrics_labels) 
     print("Shape lyrics labels: ", lyrics_labels.shape) 
     print("Shape filtered features wo instrumental: ",filtered_features_wo_instrumental.shape) 
     
-    """print("with TimeSplitSeries")
-    for train_index, test_index in tscv.split(filtered_features_wo_instrumental):
-        X_train, X_test = filtered_features_wo_instrumental[train_index], filtered_features_wo_instrumental[test_index]
-        y_train, y_test = lyrics_labels[train_index], lyrics_labels[test_index]
-        
-        #X_train, X_test, y_train, y_test = train_test_split(filtered_features_wo_instrumental, lyrics_labels, test_size=0.2, random_state=42)
-        baseline_classifier = svm.SVC(kernel="linear", C=0.0001)
-        #baseline_classifier = LogisticRegression()
-        #baseline_classifier = DummyClassifier(strategy="most_frequent")
-        baseline_classifier.fit(X_train, y_train)
-        y_pred_baseline = baseline_classifier.predict(X_test)
-        print("Baseline Evaluation *lyrics prediction* using {}:\n".format(str(baseline_classifier)),
-        "Accuracy: ", accuracy_score(y_test, y_pred_baseline),
-        "Baseline precision: ", precision_score(y_test, y_pred_baseline), 
-        "Baseline recall: ", recall_score(y_test, y_pred_baseline), 
-        "Baseline f1-score: ", f1_score(y_test, y_pred_baseline),
-        "Confusion matrix: ", confusion_matrix(y_test, y_pred_baseline),
-        "----------------------\n--------------------")
-    """
-
-
     print("5-FOLD CROSS-VALIDATION OF LYRICS PREDICTION USING PRECOMPUTED ICA:")
     baseline_classifier = svm.SVC(kernel = "linear", C=0.0001)
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -299,12 +220,55 @@ with h5py.File(data, 'r') as f:
     "\nPRECISION: ", cv_scores_precision,
     "\nRECALL: ", cv_scores_recall,
     "\nF1SCORE: ", cv_scores_f1)
+    y_pred = cross_val_predict(baseline_classifier, filtered_features_wo_instrumental, lyrics_labels, cv=cv)
+    print(confusion_matrix(lyrics_labels, y_pred))
 
+    ###################################################################################
+    ###################################################################################
+    ###################################################################################
+    ###################################################################################
+    ###BASELINE LYRICS PREDICTION SONGS WITH LYRICS VS. INSTRUMENTAL PIECES
+    
+    print("Lyrics prediction SONGS WITH LYRICS VS. INSTRUMENTAL PIECES: \n")
 
+    #delete stimuli 11,12,13,14 (instrumental versions of)
+    #should be easier than the other lyrics prediction task
+    delete_ids = [11,12,13,14]
+    # Find indices of labels to remove
+    indices_to_remove = np.where(np.isin(filtered_labels, delete_ids))[0]
 
+    filtered_features2 = np.delete(aggregated_data, indices_to_remove, axis=0)
+    filtered_labels2 = np.delete(filtered_labels, indices_to_remove)
+    filtered_subjects2 = np.delete(filtered_subjects, indices_to_remove)
+    #print("here: ", filtered_features_wo_instrumental.shape, filtered_labels_wo_instrumental.shape)
+    #convert labels to binary lyrics labels
+    
+    lyrics_ids = [1,2,3,4]
+    instrumental_ids = [21,22,23,24]
 
+    lyrics_labels2 = []
+    for l in filtered_labels2:
+        if l in lyrics_ids:
+            lyrics_labels2.append(1)
+        elif l in instrumental_ids:
+            lyrics_labels2.append(0)
+    #print(lyrics_labels, len(lyrics_labels))
+    #print(filtered_features_wo_instrumental.shape)
 
-
-
-
-        
+    lyrics_labels2 = np.array(lyrics_labels2) 
+    print("Shape lyrics labels: ", lyrics_labels2.shape) 
+    print("Shape filtered features wo instrumental: ",filtered_features2.shape) 
+    
+    print("5-FOLD CROSS-VALIDATION OF LYRICS PREDICTION USING PRECOMPUTED ICA:")
+    baseline_classifier = svm.SVC(kernel = "linear", C=0.0001)
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    cv_scores_accuracy = cross_val_score(baseline_classifier, filtered_features2, lyrics_labels2, cv=cv, scoring='accuracy')
+    cv_scores_precision = cross_val_score(baseline_classifier, filtered_features2, lyrics_labels2, cv=cv, scoring='precision_macro')
+    cv_scores_recall = cross_val_score(baseline_classifier, filtered_features2, lyrics_labels2, cv=cv, scoring='recall_macro')
+    cv_scores_f1 = cross_val_score(baseline_classifier, filtered_features2, lyrics_labels2, cv=cv, scoring='f1_macro')
+    print("\nACCURACY: ",cv_scores_accuracy, 
+    "\nPRECISION: ", cv_scores_precision,
+    "\nRECALL: ", cv_scores_recall,
+    "\nF1SCORE: ", cv_scores_f1)
+    y_pred = cross_val_predict(baseline_classifier, filtered_features2, lyrics_labels2, cv=cv)
+    print(confusion_matrix(lyrics_labels2, y_pred))
