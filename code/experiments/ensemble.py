@@ -79,6 +79,13 @@ X = fe.fit_transform(X)"""
 # replace with doing leave-one-participant-out cv
 X_train, X_test, y_train, y_test = train_test_split(GT_df, y, test_size=0.2, random_state=42, shuffle=False) #maybe stratified as the classes aren't that uniformly distributed...
 print("y_train: ", Counter(y_train))
+"""cv = GroupKFold(n_splits=9)
+print(cv.get_n_splits(X, y, groups))
+for i, (train_index, test_index) in enumerate(cv.split(X, y, groups)):
+    print(f"Fold {i}:")
+    print(f"  Train: index={train_index}, group={groups[train_index]}")
+    print(f"  Test:  index={test_index}, group={groups[test_index]}")"""
+
 
 
 baseline_classifier = svm.SVC(kernel = "linear", C=0.0001)
@@ -92,3 +99,68 @@ print(accuracy_score(y_preds, y_test))
 cf_matrix = confusion_matrix(y_test, y_preds)
 print(cf_matrix)
 sns.heatmap(cf_matrix, annot=True)
+
+
+
+
+
+
+
+##########################
+print("*****************************")
+#leave-one-participant-out cv
+df = GT_df
+df["label"] = y
+#print("df with labels: ", df) #this looks good
+
+fold_size = 60
+num_folds = 9
+total_rows = len(df)
+rows_per_fold = total_rows // num_folds
+
+# Initialize lists to store training and testing indices
+train_indices = []
+test_indices = []
+
+# Generate indices for each fold
+for i in range(num_folds):
+    # Calculate start and end indices for the test set
+    start_index = i * rows_per_fold
+    end_index = start_index + fold_size 
+    # Generate test indices
+    test_idx = list(range(start_index, end_index))
+    # Generate train indices (remaining indices)
+    train_idx = [idx for idx in range(total_rows) if idx not in test_idx]
+    
+    # Append indices to lists
+    train_indices.append(train_idx)
+    test_indices.append(test_idx)
+
+# Perform cross-validation
+for fold in range(num_folds):
+    # Get train and test sets
+    train_set = df.iloc[train_indices[fold]]
+    test_set = df.iloc[test_indices[fold]]
+
+    X_train = train_set.iloc[:, :-1]
+    y_train = train_set.iloc[:,-1]
+    X_test = test_set.iloc[:,:-1]
+    y_test = test_set.iloc[:,-1]
+
+    #print("lengths of sets: ", len(X_train), len(y_train), len(X_test), len(y_test))
+
+    
+    # Your cross-validation logic here, train_model(train_set), evaluate_model(test_set), etc.
+    print(f"Fold {fold+1}: Train set size: {len(train_set)}, Test set size: {len(test_set)}")
+    baseline_classifier = svm.SVC(kernel = "linear", C=0.0001)
+    baseline_classifier.fit(X_train, y_train)
+    y_preds = baseline_classifier.predict(X_test)
+    print(y_preds)
+    print(accuracy_score(y_preds, y_test))
+
+    #print([(p,t) for (p,t) in zip(y_preds, y_test)])
+    cf_matrix = confusion_matrix(y_test, y_preds)
+    print(cf_matrix)
+    print("----------------")
+
+
