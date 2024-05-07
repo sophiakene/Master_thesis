@@ -77,15 +77,8 @@ X = fe.fit_transform(X)"""
 
 # Split the data into training and testing sets
 # replace with doing leave-one-participant-out cv
-X_train, X_test, y_train, y_test = train_test_split(GT_df, y, test_size=0.3, random_state=42, shuffle=False) #maybe stratified as the classes aren't that uniformly distributed...
+X_train, X_test, y_train, y_test = train_test_split(GT_df, y, test_size=0.2, random_state=42, shuffle=False) #maybe stratified as the classes aren't that uniformly distributed...
 print("y_train: ", Counter(y_train))
-"""cv = GroupKFold(n_splits=9)
-print(cv.get_n_splits(X, y, groups))
-for i, (train_index, test_index) in enumerate(cv.split(X, y, groups)):
-    print(f"Fold {i}:")
-    print(f"  Train: index={train_index}, group={groups[train_index]}")
-    print(f"  Test:  index={test_index}, group={groups[test_index]}")"""
-
 
 
 baseline_classifier = svm.SVC(kernel = "linear", C=0.0001)
