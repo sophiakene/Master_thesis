@@ -13,7 +13,7 @@ from preprocessing_functions import *
 participants = ['P01', 'P04', 'P05', 'P06', 'P07', 'P09', 'P11', 'P12', 'P13', 'P14']
 participants = ['P01', 'P04', 'P06', 'P07', 'P09', 'P11', 'P12', 'P13', 'P14'] #excluding P05, don't have ica data for them
 
-folder = 'openmiir/raw_data'
+folder = '../../../Thesis/openmiir/raw_data'
 
 
 EOG_channels = ['EXG'+str(n)for n in range(1,7)]
@@ -72,61 +72,9 @@ for participant in participants:
     # in the perception experiments stober et al did, they did not downsample but left the data at 512Hz
     #raw.resample(64, verbose=True)
 
-
-    #using EOG artifact removal instead of ICA now
-    #also do one attempt with ICA not [:100] but a little more and like randomly drawn? not first 100
-    """raw.set_eeg_reference(ref_channels=['EXG1', 'EXG2', 'EXG3', 'EXG4'])
-    weights = EOGRegression().fit(raw)
-    raw_clean = weights.apply(raw, copy=True)"""
-
-    
-    # independent component analysis to get rid of eye blinking data
-    """reject_dict = {
-    "P01" : [0,1,3,11], 
-    "P04" : [0,2],
-    "P05" : [1, 2, 13, 18, 33, 36, 62],
-    "P06" : [0, 2, 11, 18, 38],
-    "P07" : [0, 1, 2, 13, 21, 39],
-    "P09" : [0, 1, 3, 6, 8, 18],
-    "P11" : [0, 3, 17, 30, 47, 60],
-    "P12" : [0, 1, 3, 13, 23, 38, 60], 
-    "P13" : [0, 1, 2, 3, 5, 13, 24, 46, 58],
-    "P14" : [0, 1, 2, 4, 8, 11]
-    }
-    print("Doing ICA for {} now".format(participant))
-    ica = mne.preprocessing.ICA(n_components=64, method="infomax", fit_params=dict(extended=True),random_state=42, verbose=False)
-    ica.fit(eog_epochs[0:100])
-    print("plotting now")
-    ica.plot_components()
-    print("plotted")
-    ica.exclude = reject_dict[participant]
-
-    cleaned_raw = ica.apply(raw)
-    cleaned_raw.save('NEWEST-{}-preprocessed-ica.fif'.format(participant), overwrite=True) 
-    raw.plot()
-    cleaned_raw.plot()"""
-    # ica is applied in the new raw?
-
-
     ica = mne.preprocessing.read_ica('{}-100p_64c-ica.fif'.format(participant),verbose=False)
     print("***********",ica.n_components_)
     #ica.n_components_ = 0.99
     raw_clean = ica.apply(raw)
     raw_clean.save('LONGER-EPOCHS-{}-preprocessed-precICA-raw.fif'.format(participant), overwrite=True)
 
-
-    """raw_clean.save('NEW-EOGartifactremoval-{}-preprocessed-raw.fif'.format(participant), overwrite=True)
-    """
-"""
-# Open an HDF5 file to store the dataset
-with h5py.File('eeg_dataset.h5', 'w') as hf:
-    # Iterate through each participant's pre-processed data
-    for participant in participants:
-        # Load pre-processed data
-        preprocessed_data = mne.io.read_raw_fif('{}-preprocessed-raw.fif'.format(participant), preload=True)
-        
-        # Save pre-processed data to HDF5 file under a common group
-        group = hf.create_group('participant_{}'.format(participant))
-        group.create_dataset('data', data=preprocessed_data.get_data())
-        group.attrs['participant_id'] = participant
-"""

@@ -40,11 +40,11 @@ def merge_trial_and_audio_onsets(raw, use_audio_onsets=True, inplace=True, stim_
 def load_beat_times(stimulus_id, cue=False, data_root=None, verbose=True, version=1):
 
     if cue:
-        beats_filepath = os.path.join('openmiir/meta',
+        beats_filepath = os.path.join('../../../Thesis/openmiir/meta',
                                       'beats.v{}'.format(version),
                                       '{}_cue_beats.txt'.format(stimulus_id))
     else:
-        beats_filepath = os.path.join('openmiir/meta',
+        beats_filepath = os.path.join('../../../Thesis/openmiir/meta',
                                       'beats.v{}'.format(version),
                                       '{}_beats.txt'.format(stimulus_id))
 
@@ -89,7 +89,7 @@ def load_stimuli_metadata_map(key=None, data_root=None, verbose=None, version=No
         return map
 
     current = os.getcwd()
-    data_root = os.path.join(os.path.dirname(current), 'openmiir/')
+    data_root = os.path.join(os.path.dirname(current), '../../../Thesis/openmiir/')
     meta = load_stimuli_metadata(data_root, version=version)
 
     if key is None:
@@ -119,7 +119,7 @@ def load_stimuli_metadata(data_root=None, version=None, verbose=None):
     xlsx_filepath = os.path.join(data_root, 'meta', 'Stimuli_Meta.v{}.xlsx'.format(version))
     """
 
-    xlsx_filepath = 'openmiir/meta/Stimuli_Meta.v2.xlsx'
+    xlsx_filepath = '../../../Thesis/openmiir/meta/Stimuli_Meta.v2.xlsx'
     #book = xlrd.open_workbook(xlsx_filepath, encoding_override="cp1252")
     #sheet = book.sheet_by_index(0)
     sheet = pd.read_excel(xlsx_filepath)#, encoding='cp1252') #book=
