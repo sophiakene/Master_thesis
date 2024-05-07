@@ -49,7 +49,7 @@ info = create_info(ch_names, sfreq, ch_types='eeg', verbose=None)
 #data = "dataset_baseline_correction-200.h5"
 #data = "PERCEPTION_DATASET.h5"
 #data = "IMAGINATION_DATASET.h5"
-data = "PERCEPTION_DATASET_W_PREC_ICA.h5"
+#data = "PERCEPTION_DATASET_W_PREC_ICA.h5"
 #np.set_printoptions(threshold=np.inf) #to see the whole confusion matrix
 
 with h5py.File(data, 'r') as f:
