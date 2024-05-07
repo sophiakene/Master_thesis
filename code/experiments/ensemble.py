@@ -8,24 +8,39 @@ from sklearn import svm
 from mne_features.feature_extraction import FeatureExtractor
 from collections import Counter
 import seaborn as sns
+import sys
 
-perception_data = "../../../Thesis/PERCEPTION_DATASET_W_PREC_ICA.h5"
+import warnings
+warnings.filterwarnings("ignore")
 
-import os
-print(os.getcwd())
+condition = sys.argv[1]
+baseline_or_ceiling = sys.argv[2]
 
-with h5py.File(perception_data, 'r') as f1:
+#change paths here
+if condition == "Perception":
+    data = "../../../Thesis/INDIVIDUAL_LENGTH_PERCEPTION.h5"
+elif condition == "Imagination":
+    data = "../../../Thesis/INDIVIDUAL_LENGTH_IMAGINATION.h5"
+elif condition == "Both":
+    data = "../../../Thesis/INDIVIDUAL_LENGTH_BOTH_CONDITIONS.h5"
+
+else:
+    raise ValueError("Condition argument not recognized. Please provide 'Perception', 'Imagination', or 'Both'.")
+
+
+with h5py.File(data, 'r') as f:
     # List all datasets in the file
-    print(f1.keys())
-    X = f1['data'][:]
-    subjects = f1['subjects'][:]
-    y = f1['labels'][:]
-    conditions = f1['condition'][:]
+    print("Datasets in h5 file: ", f.keys())
+    X = f['data'][:]
+    subjects = f['subjects'][:]
+    y = f['labels'][:]
+    conditions = f['condition'][:]
 
-print(X.shape)
+print("shape of data: ", X.shape)
+print("Aggregating EEG data into 1 mean channel")
 X = np.mean(X, axis=1) #don't aggregate over channels when doing feature extraction
 #X = X.ravel()
-print(X.shape)
+print("shape of data after aggregation: ", X.shape)
 
 # Sample EEG features DataFrame (replace this with your actual data)
 # Assuming eeg_features contains features extracted from EEG data for each stimulus
@@ -48,7 +63,7 @@ lyrics_labels = np.array([lyrics_translation[label] for label in y])
 mode_labels = np.array([mode_translation[label] for label in y]) 
 
 
-print(meter_labels.shape)
+#print(meter_labels.shape)
 # Combine ground truth labels into a single DataFrame
 # Each row corresponds to a stimulus, and columns represent the labels of each subtask
 GT_df = pd.DataFrame({
@@ -57,15 +72,13 @@ GT_df = pd.DataFrame({
     'Mode': mode_labels,
 
 })
-print(GT_df[:10])
-print(len(GT_df))
+#print(GT_df[:10])
+print("number of data points (trials): ",len(GT_df))
 
+#add EEG data to dataframe
 X = X.T #transpose X to shape (3538,540)
 for i in range(X.shape[0]):
     GT_df[f'time_point{i+1}'] = X[i]
-
-print(GT_df[:10])
-print(len(GT_df))
 
 #X = np.concatenate((X, meter_labels, lyrics_labels, mode_labels))
 #X is the EEG data 
@@ -77,14 +90,14 @@ X = fe.fit_transform(X)"""
 
 # Split the data into training and testing sets
 # replace with doing leave-one-participant-out cv
-X_train, X_test, y_train, y_test = train_test_split(GT_df, y, test_size=0.2, random_state=42, shuffle=False) #maybe stratified as the classes aren't that uniformly distributed...
+"""X_train, X_test, y_train, y_test = train_test_split(GT_df, y, test_size=0.2, random_state=42, shuffle=False) #maybe stratified as the classes aren't that uniformly distributed...
 print("y_train: ", Counter(y_train))
-"""cv = GroupKFold(n_splits=9)
+cv = GroupKFold(n_splits=9)
 print(cv.get_n_splits(X, y, groups))
 for i, (train_index, test_index) in enumerate(cv.split(X, y, groups)):
     print(f"Fold {i}:")
     print(f"  Train: index={train_index}, group={groups[train_index]}")
-    print(f"  Test:  index={test_index}, group={groups[test_index]}")"""
+    print(f"  Test:  index={test_index}, group={groups[test_index]}")
 
 
 
@@ -92,28 +105,30 @@ baseline_classifier = svm.SVC(kernel = "linear", C=0.0001)
 #scores = cross_val_score(baseline_classifier, X, y, cv=9) #apparently shuffle=False
 baseline_classifier.fit(X_train, y_train)
 y_preds = baseline_classifier.predict(X_test)
-print(y_preds)
+#print(y_preds)
 print(accuracy_score(y_preds, y_test))
 
 #print([(p,t) for (p,t) in zip(y_preds, y_test)])
 cf_matrix = confusion_matrix(y_test, y_preds)
 print(cf_matrix)
-sns.heatmap(cf_matrix, annot=True)
-
-
-
-
-
+sns.heatmap(cf_matrix, annot=True)"""
 
 
 ##########################
-print("*****************************")
+print("Training + Predicting ...")
 #leave-one-participant-out cv
 df = GT_df
 df["label"] = y
 #print("df with labels: ", df) #this looks good
 
-fold_size = 60
+#print("here: ",df.iloc[:5,:3]) #only correct labels
+
+if condition == "Perception":
+    fold_size = 60
+elif condition == "Imagination":
+    fold_size = 170
+elif condition == "Both":
+    fold_size = 230 
 num_folds = 9
 total_rows = len(df)
 rows_per_fold = total_rows // num_folds
@@ -142,10 +157,18 @@ for fold in range(num_folds):
     train_set = df.iloc[train_indices[fold]]
     test_set = df.iloc[test_indices[fold]]
 
-    X_train = train_set.iloc[:, :-1]
-    y_train = train_set.iloc[:,-1]
-    X_test = test_set.iloc[:,:-1]
-    y_test = test_set.iloc[:,-1]
+    if baseline_or_ceiling == "Baseline":
+        #exclude correct labels if Baseline
+        X_train = train_set.iloc[:, 3:-1]
+        y_train = train_set.iloc[:,-1]
+        X_test = test_set.iloc[:,3:-1]
+        y_test = test_set.iloc[:,-1]
+    elif baseline_or_ceiling == "Ceiling":
+        X_train = train_set.iloc[:, :-1]
+        y_train = train_set.iloc[:,-1]
+        X_test = test_set.iloc[:,:-1]
+        y_test = test_set.iloc[:,-1]
+    print(X_train.shape)
 
     #print("lengths of sets: ", len(X_train), len(y_train), len(X_test), len(y_test))
 
@@ -155,12 +178,12 @@ for fold in range(num_folds):
     baseline_classifier = svm.SVC(kernel = "linear", C=0.0001)
     baseline_classifier.fit(X_train, y_train)
     y_preds = baseline_classifier.predict(X_test)
-    print(y_preds)
-    print(accuracy_score(y_preds, y_test))
+    #print(y_preds)
+    print("Accuracy: ", accuracy_score(y_preds, y_test))
 
     #print([(p,t) for (p,t) in zip(y_preds, y_test)])
-    cf_matrix = confusion_matrix(y_test, y_preds)
-    print(cf_matrix)
-    print("----------------")
+
+    print("confusion matrix: ", confusion_matrix(y_test, y_preds))
+
 
 
