@@ -132,15 +132,21 @@ print("len all labels", len(all_labels))
 print("len all conditions", len(all_conditions))
 
 print(all_epochs[0].get_data().shape)
+reshaped_epochs = []
+for epoch in all_epochs: #epoch object
+    time_points = epoch.get_data().shape[2]
+    reshaped_epoch = epoch.get_data().reshape(64,time_points) #array
+    print(reshaped_epoch.shape)
+    reshaped_epochs.append(reshaped_epoch)
 
-all_epochs = [e.get_data(verbose=False) for e in all_epochs]
-
-max_shape = (max([epoch.shape for epoch in all_epochs])) #(1, 64, 9249)
+#all_epochs = [e.get_data(verbose=False) for e in all_epochs]
+print("type: ",type(reshaped_epochs[0])) #array
+max_shape = (max([arr.shape for arr in reshaped_epochs]))
+print(max_shape) #(64,9249)
 # zero-padding
-padded_epochs = [np.pad(epoch, ((0, max_shape[0] - epoch.shape[0]), 
-                            (0, max_shape[1] - epoch.shape[1]), 
-                            (0, max_shape[2] - epoch.shape[2])), mode='constant')
-                            for epoch in all_epochs]
+padded_epochs = np.array([np.pad(epoch, ((0, max_shape[0] - epoch.shape[0]), 
+                            (0, max_shape[1] - epoch.shape[1])), mode='constant')
+                            for epoch in reshaped_epochs])
 
 
 """for i in range(10):
@@ -148,40 +154,35 @@ padded_epochs = [np.pad(epoch, ((0, max_shape[0] - epoch.shape[0]),
 print(padded_epochs[0][:10])
 print(padded_epochs[0][-10:])"""
 
+"""print("shape before squeezing: ", padded_epochs.shape)
+all_padded_epochs = np.array(padded_epochs)
+all_padded_epochs = np.squeeze(all_padded_epochs, axis=1)
+print("shape before squeezing: ", all_padded_epochs.shape)"""
 
-all_epochs = np.array(padded_epochs)
-all_epochs = np.squeeze(all_epochs, axis=1)
-
-print(all_epochs[0])
-print(all_epochs[0].shape)
+all_averaged_epochs = [epoch.mean(axis=1) for epoch in padded_epochs]
 
 all_labels = np.array(all_labels)
-#all_subjects = np.array(all_subjects)
-#all_subject = np.char.encode(all_subjects, 'ascii')
 
-#print(type(participant_ids[0]))
-#all_subjects = np.repeat(participant_ids, 60)
-all_subjects = [s.encode("ascii", "ignore") for s in all_subjects]
+
+
+all_subjects = np.array([s.encode("ascii", "ignore") for s in all_subjects])
 
 #print(type(all_subjects[0]))
 all_conditions = np.array(all_conditions)
 
-
-print(all_epochs.shape)
 
 #print(all_labels[-20:])
 #print(all_stimuli[-20:])
 
 
 
-"""
+
 #with h5py.File('NEW_IMAGINATION_ICA-2000.h5', 'w') as f: #HIER EVTL WAS KAPUTT GMEACHT. WIESO SIND ES 1553 EPOCHS?! ah wegen filtern von unable to imagine stimuli 
 # Create datasets for preprocessed data and labels and subjects
-with h5py.File("INDIVIDUAL_LENGTH_ALL_CONDITIONS.h5", "w") as f:
-f.create_dataset('data', data=all_epochs) #this was all_epochs all along, not data...
-f.create_dataset('labels', data=all_labels)
-f.create_dataset('subjects', data=all_subjects)
-f.create_dataset('condition', data=all_conditions)
+with h5py.File("ZERO-PADDED-BOTH-CONDITIONS.h5", "w") as f:
+    f.create_dataset('data', data=all_averaged_epochs)
+    f.create_dataset('labels', data=all_labels)
+    f.create_dataset('subjects', data=all_subjects)
+    f.create_dataset('condition', data=all_conditions)
 
-#print("HERE", type(all_epochs_data[0]), type(all_epochs_data[0][0]), type(all_epochs_data[0][0][0]), type(all_epochs_data[0][0][0][0]))
-"""
+print("dataset creation done")
