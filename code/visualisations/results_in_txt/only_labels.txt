@@ -1,6 +1,7 @@
 Fold 1: Train set size: 480, Test set size: 60
 Accuracy:  0.5
-confusion matrix:  [[5 0 0 0 0 0 0 0 0 0 0 0]
+confusion matrix: 
+[[5 0 0 0 0 0 0 0 0 0 0 0]
  [0 5 0 0 0 0 0 0 0 0 0 0]
  [0 0 5 0 0 0 0 0 0 0 0 0]
  [0 0 5 0 0 0 0 0 0 0 0 0]
@@ -15,7 +16,8 @@ confusion matrix:  [[5 0 0 0 0 0 0 0 0 0 0 0]
 (480, 3)
 Fold 2: Train set size: 480, Test set size: 60
 Accuracy:  0.5
-confusion matrix:  [[5 0 0 0 0 0 0 0 0 0 0 0]
+confusion matrix: 
+[[5 0 0 0 0 0 0 0 0 0 0 0]
  [0 5 0 0 0 0 0 0 0 0 0 0]
  [0 0 5 0 0 0 0 0 0 0 0 0]
  [0 0 5 0 0 0 0 0 0 0 0 0]
@@ -30,7 +32,8 @@ confusion matrix:  [[5 0 0 0 0 0 0 0 0 0 0 0]
 (480, 3)
 Fold 3: Train set size: 480, Test set size: 60
 Accuracy:  0.5
-confusion matrix:  [[5 0 0 0 0 0 0 0 0 0 0 0]
+confusion matrix: 
+[[5 0 0 0 0 0 0 0 0 0 0 0]
  [0 5 0 0 0 0 0 0 0 0 0 0]
  [0 0 5 0 0 0 0 0 0 0 0 0]
  [0 0 5 0 0 0 0 0 0 0 0 0]
