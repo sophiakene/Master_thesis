@@ -18,11 +18,17 @@ baseline_or_ceiling = sys.argv[2]
 
 #change paths here
 if condition == "Perception":
-    data = "../../../Thesis/INDIVIDUAL_LENGTH_PERCEPTION.h5"
+    data = "../../../Thesis/INDIVIDUAL_LENGTH_PERCEPTION.h5" #actually not completely sure if this is zero-padded 
+    data = "../dataset_creation/ZERO-PADDED-PERCEPTION.h5"
+    #trimmed
+    data = "../dataset_creation/TRIMMED_PERCEPTION.h5"
 elif condition == "Imagination":
     data = "../../../Thesis/INDIVIDUAL_LENGTH_IMAGINATION.h5"
+    data = "../dataset_creation/TRIMMED_IMAGINATION.h5"
 elif condition == "Both":
     data = "../../../Thesis/INDIVIDUAL_LENGTH_BOTH_CONDITIONS.h5"
+    #data = "../dataset_creation/ZERO-PADDED-BOTH-CONDITIONS.h5"
+    data = "../dataset_creation/TRIMMED_PERCEPTION.h5"
 
 else:
     raise ValueError("Condition argument not recognized. Please provide 'Perception', 'Imagination', or 'Both'.")
@@ -37,7 +43,7 @@ with h5py.File(data, 'r') as f:
     conditions = f['condition'][:]
 
 print("shape of data: ", X.shape)
-print("Aggregating EEG data into 1 mean channel")
+print("Aggregating EEG data into 1 mean channel") #commenting out for zero-padded experiment
 X = np.mean(X, axis=1) #don't aggregate over channels when doing feature extraction
 #X = X.ravel()
 print("shape of data after aggregation: ", X.shape)

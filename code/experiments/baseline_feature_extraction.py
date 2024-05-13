@@ -91,17 +91,23 @@ with h5py.File(data, 'r') as f:
     #print("aggegated data shape ", aggregated_data.shape)
     #print("distribution of song labels in data set: ", Counter(filtered_labels))
 
-    fe = FeatureExtractor(selected_funcs=['mean', 'variance', 'std', 'ptp_amp', 'skewness',
-    'rms','app_entropy','pow_freq_bands','kurtosis'])
+    #fe = FeatureExtractor(selected_funcs=['mean', 'variance', 'std', 'ptp_amp', 'skewness',
+    #'rms','app_entropy','pow_freq_bands','kurtosis'])
+    
+    params = {"pow_freq_bands__freq_bands": np.array([[4, 8], [13, 30]]),
+            "energy_freq_bands__freq_bands":np.array([[4, 8], [13, 30]])}
+    fe = FeatureExtractor(selected_funcs=['pow_freq_bands', "mean", "ptp_amp", 
+    "spect_slope", "phase_lock_val",
+    "nonlin_interdep", "energy_freq_bands"], params=params)
     X = fe.fit_transform(filtered_features) #this takes a long time :(
-    with open("extracted_features.txt", "w"):
-        f.write(str(X))
+    with open("extracted_features_meter.txt", "w") as wf:
+        wf.write(str(X))
 
     ###################################################################################
     ###################################################################################
     ###################################################################################
     ###################################################################################
-    print("5-FOLD CROSS-VALIDATION OF SONG PREDICTION USING PRECOMPUTED ICA:")
+    """print("5-FOLD CROSS-VALIDATION OF SONG PREDICTION USING PRECOMPUTED ICA:")
     baseline_classifier = svm.SVC(kernel = "linear", C=0.0001)
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     cv_scores_accuracy = cross_val_score(baseline_classifier, X, filtered_labels, cv=cv, scoring='accuracy')
@@ -113,7 +119,7 @@ with h5py.File(data, 'r') as f:
     "\nRECALL: ", cv_scores_recall,
     "\nF1SCORE: ", cv_scores_f1)
     y_pred = cross_val_predict(baseline_classifier, X, filtered_labels, cv=cv)
-    print(confusion_matrix(filtered_labels, y_pred))
+    print(confusion_matrix(filtered_labels, y_pred))"""
 
     ###################################################################################
     ###################################################################################
@@ -149,7 +155,7 @@ with h5py.File(data, 'r') as f:
     "\nF1SCORE: ", cv_scores_f1)
     y_pred = cross_val_predict(baseline_classifier, X, meter_labels, cv=cv)
     print(confusion_matrix(meter_labels, y_pred))    
-
+    """
     ###################################################################################
     ###################################################################################
     ###################################################################################
@@ -279,4 +285,4 @@ with h5py.File(data, 'r') as f:
     "\nRECALL: ", cv_scores_recall,
     "\nF1SCORE: ", cv_scores_f1)
     y_pred = cross_val_predict(baseline_classifier, filtered_features2, lyrics_labels2, cv=cv)
-    print(confusion_matrix(lyrics_labels2, y_pred))
+    print(confusion_matrix(lyrics_labels2, y_pred))"""

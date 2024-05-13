@@ -21,12 +21,14 @@ from sklearn.model_selection import ParameterGrid
 param_grid = {
     'num_classes': [12],
     'num_electrodes': [64],
-    'chunk_size': [3538],
+    'chunk_size': [9248], #[3538],
     'dropout': [0.1,0.25,0.5,0.75], 
     'lr': [0.0001,0.001,0.01,0.1]  
 }
 
-data = "PERCEPTION_DATASET_W_PREC_ICA.h5"
+data = "../../../Thesis/PERCEPTION_DATASET_W_PREC_ICA.h5"
+data = "../dataset_creation/ZERO-PADDED-PERCEPTION-ALL-CHANNELS.h5"
+
 with h5py.File(data, 'r') as f:
     X = f['data'][:]
     subjects = f['subjects'][:]
@@ -56,12 +58,19 @@ y_tensor = torch.tensor(mapped_labels, dtype=torch.long)
 
 
 
-print(X_tensor.size()) #(540,512) after feature extraction or (540,64,3538) without feature extraction
+print(X_tensor.size()) #[(540,512) after feature extraction] or (540,64,3538) without feature extraction
 print(y_tensor.size()) #(540)
 
 print("before unsqueezing: ",X_tensor.shape)
 X_tensor = X_tensor.unsqueeze(1)
 print("after unsqueezing: ",X_tensor.shape)
+print("*************************")
+print(X_tensor[0].shape) #([1, 64, 9248])
+print(y_tensor[0].shape) #torch.Size([])
+print(y_tensor[0]) #tensor(5)
+print(y_tensor) #tensor([ 5,  2, 10,  6,...
+print("*************************")
+
 
 best_accuracy = 0.0
 best_params = None
