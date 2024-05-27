@@ -122,9 +122,9 @@ X = []
 for epoch in all_epochs:
     X.append(fe.fit_transform(epoch))
 
-X = np.vstack(X)  # Now stack them together
+X = np.vstack(X)  # put into np vector vertically 
 
-# Combine the features
+# Combine the features horizontally
 all_features = np.hstack([all_windowed_features, X])
 
 all_labels = np.array(all_labels)
