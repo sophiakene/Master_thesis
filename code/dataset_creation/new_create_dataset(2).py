@@ -1,8 +1,4 @@
 import mne
-from mne_features.feature_extraction import FeatureExtractor
-from mne.preprocessing import peak_finder
-from scipy.signal import find_peaks
-
 import numpy as np
 import h5py
 
@@ -11,30 +7,37 @@ from find_stimulus_length import get_start_and_end
 
 from collections import Counter
 
+#participant_ids = ['P01', 'P04', 'P05']
+#participant_ids = ['P06', 'P07', 'P09']
+#participant_ids = ['P11', 'P12', 'P13', 'P14']
+#participant_ids = ["P01", "P04", "P05", "P06", "P07", "P09", "P11", "P12", "P13", "P14"]
 participant_ids = ["P01", "P04", "P06", "P07", "P09", "P11", "P12", "P13", "P14"] #excluding P05 as they did
+#song_ids = [1, 2, 3, 4, 11, 12, 13, 14, 21, 22, 23, 24]
+#condition_ids = [1,2,3,4]
 
 path = "openmiir/eeg/preprocessing/notebooks"
-
-
-def nonlinear_energy(signal):
-    nle = signal[1:-1] ** 2 - signal[:-2] * signal[2:]
-    return np.mean(nle)
-
-def curve_length(signal):
-    return np.sum(np.abs(np.diff(signal)))
-
 
 all_epochs = []
 all_labels = []
 all_subjects = [] 
 all_conditions = []
+
 all_stimuli = []
 
 with open("num_filtered_labels.txt", "w") as f:
     for participant_id in participant_ids:
+
+        file = 'NEW-{}-preprocessed-raw.fif'.format(participant_id) #NEW with longer EOG epochs
+        file = "NEW-EOGartifactremoval-{}-preprocessed-raw.fif".format(participant_id) #with EOG artifact removal instead of ICA
+        file = "{}-preprocessed-precICA-raw.fif".format(participant_id)
         #-1,16s epochs 
         file = "../../../Thesis/LONGER-EPOCHS-{}-preprocessed-precICA-raw.fif".format(participant_id)
+        
         raw_data = mne.io.read_raw_fif(file, preload = True)
+        #print("Checking raw data:", type(raw_data)) #dasch guet
+        #print(raw_data.info)
+
+        #meta_data = load_stimuli_metadata(data_root=path, verbose=False, version=meta_version)
         events = mne.find_events(raw_data, stim_channel="STI 014")
         print("number of events: ", len(events))
         #triplets of time, - , stimulus id
@@ -42,13 +45,14 @@ with open("num_filtered_labels.txt", "w") as f:
         print("stimulus_ids:", stimulus_ids)
         print(Counter(stimulus_ids))
 
-        eeg_picks = mne.pick_types(raw_data.info, meg=False, eeg=True, eog=False, stim=False, exclude=["EXG5", "EXG6"])
+        eeg_picks = mne.pick_types(raw_data.info, meg=False, eeg=True, eog=False, stim=False, include=["T7", "T8"])
+        #eeg_picks = mne.pick_types(raw_data.info, meg=False, eeg=True, eog=False, stim=False, exclude=["EXG5", "EXG6"])
         #EXG5 and 6 only appear in the second half of participants, so I'll just include them for everyone so the number of channels match
         """epochs = mne.Epochs(raw_data, events=events, event_id=None, #None means it takes all events, maybe try that instead
                         tmin=0, tmax=6.87, #6.87s is the shortest of the stimuli then i don't need to crop the epochs later on 
                         proj=False, picks=eeg_picks, preload=True, verbose=False, baseline=(0, 0))"""
         included_event_ids = [11,21,31,41,111,121,131,141,211,221,231,241] #perception
-        """included_event_ids = [  12,13,14,
+        included_event_ids = [  12,13,14,
                                 22,23,24,
                                 32,33,34,
                                 42,43,44,
@@ -75,8 +79,7 @@ with open("num_filtered_labels.txt", "w") as f:
                                 222,223,224,
                                 232,233,234,
                                 242,243,244
-                                ]  #ALL"""
-                        
+                                ]  #ALL
                                 
 
 
@@ -119,7 +122,7 @@ with open("num_filtered_labels.txt", "w") as f:
             #print("tmin: ", tmin, "\ntmax: ", tmax)
 
             #INDIVIDUAL LENGTHS
-            epoch = mne.Epochs(raw_data, events=event, event_id=stimulus_id, tmin=tmin, tmax=tmin+6.8709, #tmax=6.8709
+            epoch = mne.Epochs(raw_data, events=event, event_id=stimulus_id, tmin=tmin, tmax=tmax, #tmax=6.8709
             baseline=(None,None), verbose=False, picks=eeg_picks)
             print("EPOCH ", epoch.get_data()[0].shape)
             #CUTTING TO SHORTEST STIMULUS LENGTH
@@ -134,120 +137,84 @@ with open("num_filtered_labels.txt", "w") as f:
             all_subjects.append(participant_id)
             all_stimuli.append(stimulus_id)
 
+  
+
 print("len all epochs", len(all_epochs))
 print("len all subjects", len(all_subjects))
 print("len all labels", len(all_labels))
 print("len all conditions", len(all_conditions))
 
-#all_epochs = np.array([e.get_data(verbose=False) for e in all_epochs])
 
-#HERE FEATURE EXTRACTION INSTEAD OF TRIMMING / PADDING
-#nvm, have to trim or pad (doing trimming now, bc that makes them smaller)
 
+"""infos = [e.info for e in all_epochs]
+for i in infos:
+    print(i)"""
+
+#print(all_epochs[0].info["ch_types"])
+
+
+
+
+#print("subjects: ", all_subjects) #this looks right
+#print("----------------------------")
+#print("labels: ", all_labels)
+#print("----------------------------")
+#print("conditions: ", all_conditions)
+
+#all_epochs = np.stack([epoch.get_data(copy=False) for epoch in all_epochs])
+#all_epochs = np.array(all_epochs)
 all_epochs = [e.get_data(verbose=False) for e in all_epochs]
+#print([e if e.shape[1] == 69 else None for e in all_epochs_data])
+#print(all_epochs_data)
+
+"""max_shape = (max([epoch.shape for epoch in all_epochs])) #(1, 64, 9249)
+# zero-padding
+padded_epochs = [np.pad(epoch, ((0, max_shape[0] - epoch.shape[0]), 
+                                (0, max_shape[1] - epoch.shape[1]), 
+                                (0, max_shape[2] - epoch.shape[2])), mode='constant') for epoch in all_epochs]
+
+
+print(padded_epochs[0])
+# zero-padding before here
+all_epochs = np.array(padded_epochs)"""
+
+min_shape = (min([epoch.shape for epoch in all_epochs])) #(1, 64, 3519)
+
+print("min shape: ", min_shape)
 
 new_all_epochs = []
 for epoch in all_epochs:
-    epoch = epoch[:,:,:3518]
+    epoch = epoch[:,:,:3519]
     new_all_epochs.append(epoch)
 
+
 all_epochs = np.array(new_all_epochs)
-
-print("before squeezing: ", all_epochs[0].shape)
-
 all_epochs = np.squeeze(all_epochs, axis=1)
-
-print("after squeezing: ",all_epochs[0].shape)
-print(all_epochs.shape)
-
-#print(all_epochs[0])
-
-"""def get_n_peaks(data):
-    n = 0
-    for channel in data:
-        peak_locs, _ = peak_finder(channel)
-        n += len(peak_locs)
-        return np.array(n)"""
-
-# Manual peak extraction
-all_peak_features = []
-all_nle_features = []
-all_curve_length_features = []
-
-"""for epoch in all_epochs:
-    epoch_peak_features = []
-    for channel_data in epoch:
-        peak_locs, peak_mags = peak_finder(channel_data)
-        peak_locs_min, peak_mags_min = peak_finder(channel_data, extrema=-1)
-        # Collect peak features (e.g., count of peaks and average magnitude)
-        peak_count = len(peak_locs) + len(peak_locs_min)
-        if peak_count > 0:
-            avg_peak_magnitude = np.mean(peak_mags)
-        else:
-            avg_peak_magnitude = 0
-        epoch_peak_features.extend([peak_count, avg_peak_magnitude])
-        epoch_peak_features.extend([peak_count])
-    all_peak_features.append(epoch_peak_features)
-print(len(all_peak_features))
-        
-# Convert to numpy array
-all_peak_features = np.array(all_peak_features)
-print(all_peak_features.shape)"""
-
-for epoch in all_epochs:
-    epoch_peak_features = []
-    epoch_nle_features = []
-    epoch_curve_length_features = []
-    
-    for channel_data in epoch:
-        peak_locs, _ = find_peaks(channel_data)
-        number_of_peaks = len(peak_locs)
-        
-        nle_value = nonlinear_energy(channel_data)
-        curve_length_value = curve_length(channel_data)
-        
-        epoch_peak_features.append(number_of_peaks)
-        epoch_nle_features.append(nle_value)
-        epoch_curve_length_features.append(curve_length_value)
-    
-    all_peak_features.append(epoch_peak_features)
-    all_nle_features.append(epoch_nle_features)
-    all_curve_length_features.append(epoch_curve_length_features)
-
-all_peak_features = np.array(all_peak_features)
-all_nle_features = np.array(all_nle_features)
-all_curve_length_features = np.array(all_curve_length_features)
-
-fe = FeatureExtractor(sfreq = 512, selected_funcs=["skewness", "mean", "kurtosis", #statistical features
-                                        "app_entropy", "hurst_exp", #non-linear features
-                                        #"line_length",  #assuming this is the same as curve length 
-                                        #("number_of_peaks", get_n_peaks)],
-                                        ],n_jobs=-1)
-X = fe.fit_transform(all_epochs) #this is a numpy array
-
-# Combine all features
-all_features = np.hstack([all_peak_features, all_nle_features, all_curve_length_features, X])
-
-#all_epochs = np.squeeze(all_epochs, axis=1)
 all_labels = np.array(all_labels)
+#all_subjects = np.array(all_subjects)
+#all_subject = np.char.encode(all_subjects, 'ascii')
+
+#print(type(participant_ids[0]))
+#all_subjects = np.repeat(participant_ids, 60)
 all_subjects = [s.encode("ascii", "ignore") for s in all_subjects]
+
+#print(type(all_subjects[0]))
 all_conditions = np.array(all_conditions)
 
-#print(all_epochs.shape)
-print(X.shape)
-print(X[0:10])
 
-# 1 without number of peaks
-# 2 ?
-# 3 with number and amplitudes of peaks as additional feature
-# 4 added nonlinear energy and curve length
+print(all_epochs.shape)
 
-with h5py.File("FEATURES_DATASET_PERCEPTION4.h5", "w") as f:
-    f.create_dataset('data', data=all_features) 
+#print(all_labels[-20:])
+#print(all_stimuli[-20:])
+
+
+#with h5py.File('NEW_IMAGINATION_ICA-2000.h5', 'w') as f: #HIER EVTL WAS KAPUTT GMEACHT. WIESO SIND ES 1553 EPOCHS?! ah wegen filtern von unable to imagine stimuli 
+# Create datasets for preprocessed data and labels and subjects
+with h5py.File("TRIMMED_ALL_T7-T8.h5", "w") as f:
+    f.create_dataset('data', data=all_epochs) #this was all_epochs all along, not data...
     f.create_dataset('labels', data=all_labels)
     f.create_dataset('subjects', data=all_subjects)
     f.create_dataset('condition', data=all_conditions)
 
+#print("HERE", type(all_epochs_data[0]), type(all_epochs_data[0][0]), type(all_epochs_data[0][0][0]), type(all_epochs_data[0][0][0][0]))
 print("dataset created")
-
-

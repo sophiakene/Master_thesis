@@ -2,7 +2,7 @@ import mne
 import numpy as np
 import h5py
 
-from preprocessing_functions import load_stimuli_metadata #do i still need this then?
+from preprocessing_functions import load_stimuli_metadata 
 from find_stimulus_length import get_start_and_end
 
 from collections import Counter
@@ -39,7 +39,7 @@ for participant_id in participant_ids:
                     tmin=0, tmax=6.87, #6.87s is the shortest of the stimuli then i don't need to crop the epochs later on 
                     proj=False, picks=eeg_picks, preload=True, verbose=False, baseline=(0, 0))"""
     included_event_ids = [11,21,31,41,111,121,131,141,211,221,231,241] #perception
-    included_event_ids = [  12,13,14,
+    """included_event_ids = [  12,13,14,
                             22,23,24,
                             32,33,34,
                             42,43,44,
@@ -67,7 +67,7 @@ for participant_id in participant_ids:
                             232,233,234,
                             242,243,244
                             ]  #ALL
-                            
+                    """        
 
 
     #filter the events. in imagination have to exclude trials that are followed by 2000
@@ -159,7 +159,7 @@ all_padded_epochs = np.array(padded_epochs)
 all_padded_epochs = np.squeeze(all_padded_epochs, axis=1)
 print("shape before squeezing: ", all_padded_epochs.shape)"""
 
-all_averaged_epochs = [epoch.mean(axis=1) for epoch in padded_epochs]
+#all_averaged_epochs = [epoch.mean(axis=1) for epoch in padded_epochs] #commenting out for making dataset with all 64 channels
 
 all_labels = np.array(all_labels)
 
@@ -179,8 +179,9 @@ all_conditions = np.array(all_conditions)
 
 #with h5py.File('NEW_IMAGINATION_ICA-2000.h5', 'w') as f: #HIER EVTL WAS KAPUTT GMEACHT. WIESO SIND ES 1553 EPOCHS?! ah wegen filtern von unable to imagine stimuli 
 # Create datasets for preprocessed data and labels and subjects
-with h5py.File("ZERO-PADDED-BOTH-CONDITIONS.h5", "w") as f:
-    f.create_dataset('data', data=all_averaged_epochs)
+with h5py.File("ZERO-PADDED-PERCEPTION-ALL-CHANNELS.h5", "w") as f:
+    #f.create_dataset('data', data=all_averaged_epochs)
+    f.create_dataset('data', data=padded_epochs)
     f.create_dataset('labels', data=all_labels)
     f.create_dataset('subjects', data=all_subjects)
     f.create_dataset('condition', data=all_conditions)
